@@ -1,0 +1,16 @@
+
+pkg.name: services/button
+pkg.description: Button and LED Service Server.
+pkg.author: "Jacob Rosenthal"
+pkg.homepage: 
+pkg.keywords:
+    - ble 
+    - bluetooth
+    - nimble
+    - button
+
+pkg.deps:
+    - "@apache-mynewt-core/net/nimble/host"
+
+pkg.init:
+    ble_svc_button_init: 300

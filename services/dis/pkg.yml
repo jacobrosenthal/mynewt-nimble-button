@@ -1,0 +1,20 @@
+
+pkg.name: services/dis
+pkg.description: BLE Device Information service.
+pkg.author: "Jacob Rosenthal"
+pkg.homepage: 
+pkg.keywords:
+    - ble
+    - bluetooth
+    - device information
+    - dis
+    - version
+    - revision
+
+pkg.deps:
+    - "@apache-mynewt-core/kernel/os"
+    - "@apache-mynewt-core/net/nimble/host"
+    - "@apache-mynewt-core/sys/id"
+
+pkg.init:
+    dis_init: 500
