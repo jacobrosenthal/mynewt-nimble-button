@@ -1,0 +1,16 @@
+
+pkg.name: services/battery
+pkg.description: BLE battery service.
+pkg.author: "Jacob Rosenthal"
+pkg.homepage: 
+pkg.keywords:
+    - ble
+    - bluetooth
+    - battery
+
+pkg.deps:
+    - "@apache-mynewt-core/kernel/os"
+    - "@apache-mynewt-core/net/nimble/host"
+
+pkg.init:
+    battery_init: 500
