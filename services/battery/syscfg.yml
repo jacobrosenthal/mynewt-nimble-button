@@ -18,4 +18,17 @@
 
 # Package: services/battery
 
+
 syscfg.defs:
+    BATTERY_TASK_PRIO:
+        description: 'TBD'
+        value: 5
+    BATTERY_SAMPLES:
+        description: 'TBD'
+        value: 2
+    BATTERY_SAMPLE_DELAY:
+        description: 'TBD'
+        value: 1800
+    # BATTERY_ADC_NAME:
+    #     description: 'TBD'
+    #     value: 'adc0'

@@ -8,9 +8,10 @@ pkg.keywords:
     - bluetooth
     - battery
 
+# pkg.apis:
+#     - ADC_HW_IMPL
+
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/net/nimble/host"
-
-pkg.init:
-    battery_init: 500
+    - "@apache-mynewt-core/hw/drivers/adc"

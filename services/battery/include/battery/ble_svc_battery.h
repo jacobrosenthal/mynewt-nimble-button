@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef _BLE_BATTERY_H_
-#define _BLE_BATTERY_H_
+#ifndef _BLE_SVC_BATTERY_H_
+#define _BLE_SVC_BATTERY_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,17 +27,11 @@ extern "C" {
 #define BLE_SVC_BATTERY_UUID16                                  0x180F
 #define BLE_SVC_BATTERY_CHR_LEVEL_UUID16                        0x2A19
 
-
-void
-battery_init(void);
 int
-battery_gatt_svr_init(void);
-void
-battery_set_level(uint16_t battery_level);
-
+ble_svc_battery_init(void *adc);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _BLE_BATTERY_H_ */
+#endif /* _BLE_SVC_BATTERY_H_ */
