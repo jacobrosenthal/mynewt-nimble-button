@@ -11,6 +11,7 @@ pkg.keywords:
 
 pkg.deps:
     - "@apache-mynewt-core/net/nimble/host"
+    - "@apache-mynewt-core/sys/stats/full"
 
 pkg.init:
     ble_svc_button_init: 300

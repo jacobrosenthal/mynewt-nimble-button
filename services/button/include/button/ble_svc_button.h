@@ -28,19 +28,13 @@ extern "C" {
 #define BLE_SVC_BUTTON_UUID16                                  0xA000
 
 /* 16 Bit Alert Notification Servivce Characteristic UUIDs */
-#define BLE_SVC_BUTTON_CHR_UUID16_LED_STAT			           0xA002
 #define BLE_SVC_BUTTON_CHR_UUID16_BUTTON_STAT                  0xA001
 
-void ble_svc_button_on_gap_connect(uint16_t conn_handle);
-
-void ble_svc_button_set_button(uint32_t level);
-void ble_svc_button_set_led(uint32_t level);
-
-typedef void (*button_svc_written_ptr)(const ble_uuid_t *uuid, uint32_t);
-
-void ble_svc_button_set_written_callback(button_svc_written_ptr);
-
 void ble_svc_button_init(void);
+
+void ble_svc_button_register_handler(os_event_fn);
+
+uint32_t ble_svc_button_count(void);
 
 #ifdef __cplusplus
 }

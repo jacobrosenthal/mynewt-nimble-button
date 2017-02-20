@@ -1,3 +1,16 @@
 
 syscfg.defs:
-
+    BUTTON_PULLUP:
+        description: 'TBD'
+        value: 'HAL_GPIO_PULL_NONE'
+    BUTTON_INVERTED:
+        description: 'TBD'
+        value: 0
+    BUTTON_PIN:
+        description: 'TBD'
+        value:
+        restrictions:
+            - $notnull
+    BUTTON_TASK_PRIO:
+        description: 'TBD'
+        value: 32

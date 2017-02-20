@@ -18,35 +18,80 @@
  */
 
 #include <assert.h>
-#include <string.h>
-#include <math.h>
 #include "sysinit/sysinit.h"
 #include "syscfg/syscfg.h"
+#include "stats/stats.h"
+#include "bsp/bsp.h"
+#include "os/os.h"
+#include "hal/hal_gpio.h"
 #include "host/ble_hs.h"
-#include "host/ble_gap.h"
 #include "button/ble_svc_button.h"
 
+static struct os_event advertise_handle_event;
 
-/* Characteristic values */
-static uint32_t ble_svc_button_led_value;
-static uint16_t ble_svc_button_led_value_handle;
-
-/* Charachteristic value handles */
-static uint32_t ble_svc_button_button_value;
+/* Characteristic value handles */
 static uint16_t ble_svc_button_button_value_handle;
 
-button_svc_written_ptr ble_svc_button_written_cb;
+//lets store our button as a stat so we can access it that way too
+STATS_SECT_START(gpio_stats)
+STATS_SECT_ENTRY(toggles)
+STATS_SECT_END
+
+static STATS_SECT_DECL(gpio_stats) g_stats_gpio_toggle;
+
+static STATS_NAME_START(gpio_stats)
+STATS_NAME(gpio_stats, toggles)
+STATS_NAME_END(gpio_stats)
+
+// /* Button Task settings */
+#define BUTTON_STACK_SIZE          (OS_STACK_ALIGN(48))
+struct os_task button_task;
+static bssnz_t os_stack_t button_stack[BUTTON_STACK_SIZE];
+
+static int last;
+static bool pressed;
+
+//implementing button on 2 consecutive low reads
+static void
+button_task_handler(void *unused)
+{
+    while (1) {
+        int current = hal_gpio_read(MYNEWT_VAL(BUTTON_PIN));
+
+#if MYNEWT_VAL(BUTTON_INVERTED)
+    {
+        current=!current;
+    }
+#endif
+
+        if( !pressed && current && last )
+        {
+            pressed = true;
+            STATS_INC(g_stats_gpio_toggle, toggles);
+            ble_gatts_chr_updated(ble_svc_button_button_value_handle);
+
+            //keep stack small, trigger callback on the default queue
+            if (advertise_handle_event.ev_cb)
+            {
+                advertise_handle_event.ev_arg = &pressed;
+                os_eventq_put(os_eventq_dflt_get(), &advertise_handle_event);
+            }
+
+        }else if(pressed && last != current)
+        {
+            pressed = false;
+        }
+        last = current;
+
+        /* Wait 50 ms */
+        os_time_delay((50 * OS_TICKS_PER_SEC) / 1000);
+    }
+}
 
 /* Access function */
 static int
 ble_svc_button_access(uint16_t conn_handle, uint16_t attr_handle,
                    struct ble_gatt_access_ctxt *ctxt, void *arg);
-
-
-/* Save written value to local characteristic value */
-static int
-ble_svc_button_chr_write(struct os_mbuf *om, uint16_t min_len, uint16_t max_len, 
-                      void *dst, uint16_t *len);
 
 static const struct ble_gatt_svc_def ble_svc_button_defs[] = {
     {
@@ -59,11 +104,6 @@ static const struct ble_gatt_svc_def ble_svc_button_defs[] = {
             .val_handle = &ble_svc_button_button_value_handle,
             .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
         }, {
-            .uuid = BLE_UUID16_DECLARE(BLE_SVC_BUTTON_CHR_UUID16_LED_STAT),
-            .access_cb = ble_svc_button_access,
-            .val_handle = &ble_svc_button_led_value_handle,
-            .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY | BLE_GATT_CHR_F_WRITE_NO_RSP,
-        }, {
             0, /* No more characteristics in this service. */
         } },
     },
@@ -74,7 +114,7 @@ static const struct ble_gatt_svc_def ble_svc_button_defs[] = {
 };
 
 /**
- * ANS access function
+ * Button access function
  */
 static int
 ble_svc_button_access(uint16_t conn_handle, uint16_t attr_handle,
@@ -84,7 +124,7 @@ ble_svc_button_access(uint16_t conn_handle, uint16_t attr_handle,
     uint16_t uuid16;
     int rc;
     
-    /* ANS Control point command and catagory variables */
+    /* Button Control point command and catagory variables */
 
     uuid16 = ble_uuid_u16(ctxt->chr->uuid);
     assert(uuid16 != 0);
@@ -93,34 +133,12 @@ ble_svc_button_access(uint16_t conn_handle, uint16_t attr_handle,
 
     case BLE_SVC_BUTTON_CHR_UUID16_BUTTON_STAT:
         if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
-            rc = os_mbuf_append(ctxt->om, &ble_svc_button_button_value,
-                                sizeof ble_svc_button_button_value);
+            rc = os_mbuf_append(ctxt->om, &g_stats_gpio_toggle.stoggles,
+                                sizeof g_stats_gpio_toggle.stoggles);
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
         }else{
             assert(0);
             return BLE_ATT_ERR_UNLIKELY;
-        }
-
-    case BLE_SVC_BUTTON_CHR_UUID16_LED_STAT:
-        if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
-            rc = os_mbuf_append(ctxt->om, &ble_svc_button_led_value,
-                                sizeof ble_svc_button_led_value);
-            return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
-        } else if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
-            // if (OS_MBUF_PKTLEN(ctxt->om) != sizeof ble_svc_button_led_value) {
-            //     return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
-            // }
-
-            rc = ble_svc_button_chr_write(ctxt->om, 0,
-                                       sizeof ble_svc_button_led_value,
-                                       &ble_svc_button_led_value,
-                                       NULL);
-
-            if(ble_svc_button_written_cb){
-                ble_svc_button_written_cb(ctxt->chr->uuid, ble_svc_button_led_value);
-            }
-
-            return rc;
         }
 
     default:
@@ -130,66 +148,32 @@ ble_svc_button_access(uint16_t conn_handle, uint16_t attr_handle,
   return 0;
 }
 
-/**
- * Writes the received value from a characteristic write to 
- * the given destination.
- */
-static int
-ble_svc_button_chr_write(struct os_mbuf *om, uint16_t min_len,
-                      uint16_t max_len, void *dst,
-                      uint16_t *len)
+
+void ble_svc_button_register_handler(os_event_fn *cb)
 {
-    uint16_t om_len;
-    int rc;
-
-    om_len = OS_MBUF_PKTLEN(om);
-    if (om_len < min_len || om_len > max_len) {
-        return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
-    }
-
-    rc = ble_hs_mbuf_to_flat(om, dst, max_len, len);
-    if (rc != 0) {
-        return BLE_ATT_ERR_UNLIKELY;
-    }
-
-    return 0;
+    advertise_handle_event.ev_cb = cb;
 }
 
-
-void
-ble_svc_button_set_led(uint32_t level)
+uint32_t
+ble_svc_button_count(void)
 {
-    ble_svc_button_led_value = level;
-    ble_gatts_chr_updated(ble_svc_button_led_value_handle);
+    return g_stats_gpio_toggle.stoggles;
 }
 
-void
-ble_svc_button_set_button(uint32_t level)
-{
-    ble_svc_button_button_value = level;
-    ble_gatts_chr_updated(ble_svc_button_button_value_handle);
-}
-
-void
-ble_svc_button_set_written_callback(button_svc_written_ptr cb)
-{
-    ble_svc_button_written_cb = cb;
-}
-
-/**
- * Initialize the ANS with initial values for enabled categories
- * for new and unread alert characteristics. Bitwise or the 
- * catagory bitmasks to enable multiple catagories.
- * 
- * XXX: We should technically be able to change the new alert and
- *      unread alert catagories when we have no active connections.
- * 
- * @return 0 on success, non-zero error code otherwise.
- */
 void
 ble_svc_button_init(void)
 {
     int rc;
+
+    hal_gpio_init_in(MYNEWT_VAL(BUTTON_PIN), MYNEWT_VAL(BUTTON_PULLUP));
+
+    stats_init(STATS_HDR(g_stats_gpio_toggle),
+               STATS_SIZE_INIT_PARMS(g_stats_gpio_toggle, STATS_SIZE_32),
+               STATS_NAME_INIT_PARMS(gpio_stats));
+
+    stats_register("gpio_toggle", STATS_HDR(g_stats_gpio_toggle));
+
+    ble_gatts_chr_updated(ble_svc_button_button_value_handle);
 
     /* Ensure this function only gets called by sysinit. */
     SYSINIT_ASSERT_ACTIVE();
@@ -198,5 +182,13 @@ ble_svc_button_init(void)
     SYSINIT_PANIC_ASSERT(rc == 0);
 
     rc = ble_gatts_add_svcs(ble_svc_button_defs);
+    SYSINIT_PANIC_ASSERT(rc == 0);
+
+    /* Create the button reader task.
+     * All sensor operations are performed in this task.
+     */
+    rc = os_task_init(&button_task, "button", button_task_handler,
+            NULL, MYNEWT_VAL(BUTTON_TASK_PRIO), OS_WAIT_FOREVER,
+            button_stack, BUTTON_STACK_SIZE);
     SYSINIT_PANIC_ASSERT(rc == 0);
 }
