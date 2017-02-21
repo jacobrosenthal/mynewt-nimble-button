@@ -25,10 +25,10 @@ extern "C" {
 #endif
 
 /* 16 Bit Alert Notification Service UUID */
-#define BLE_SVC_BUTTON_UUID16                                  0xA000
+#define BLE_SVC_BUTTON_UUID16                                  0xAA00
 
 /* 16 Bit Alert Notification Servivce Characteristic UUIDs */
-#define BLE_SVC_BUTTON_CHR_UUID16_BUTTON_STAT                  0xA001
+#define BLE_SVC_BUTTON_CHR_UUID16_BUTTON_STAT                  0xAA01
 
 void ble_svc_button_init(void);
 
