@@ -24,9 +24,8 @@
 #include "sysinit/sysinit.h"
 #include "host/ble_hs.h"
 #include "host/ble_uuid.h"
-#include "dis/dis.h"
-#include "os/endian.h"
 #include "config/config.h"
+#include "dis/ble_svc_dis.h"
 
 static int
 gatt_svr_chr_access_dis(uint16_t conn_handle, uint16_t attr_handle,
@@ -83,61 +82,64 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
     },
 };
 
-
 static int
 gatt_svr_chr_access_dis(uint16_t conn_handle, uint16_t attr_handle,
                                struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
-    const char *val;
+    char *val;
     int rc;
+    uint16_t uuid16;
     char tmp_buf[32 + 1]; ///hwid is only one that needs some tmp buffer
 
-    uint16_t uuid16 = ble_uuid_u16(ctxt->chr->uuid);
-    assert(uuid16 != 0);
+    char conf_name[11];
 
-    assert(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR);
+    if(ctxt->op != BLE_GATT_ACCESS_OP_READ_CHR)
+    {
+        return BLE_ATT_ERR_UNLIKELY;
+    }
+    uuid16 = ble_uuid_u16(ctxt->chr->uuid);
+    assert(uuid16 != 0);
 
     switch (uuid16) {
         case BLE_SVC_DIS_CHR_SYS_ID_UUID16:
-            val = conf_get_value("id/hwid", tmp_buf, sizeof(tmp_buf));
+            strcpy(conf_name, "id/hwid");
+            val = conf_get_value(conf_name, tmp_buf, sizeof(tmp_buf));
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_SVC_DIS_CHR_MODEL_NUM_UUID16:
-            val = conf_get_value("id/app", NULL, 0);
+            strcpy(conf_name, "id/app");
+            val = conf_get_value(conf_name, NULL, 0);
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_SVC_DIS_CHR_SERIAL_NUM_UUID16:
-            val = conf_get_value("id/serial", NULL, 0);
+            strcpy(conf_name, "id/serial");
+            val = conf_get_value(conf_name, NULL, 0);
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_SVC_DIS_CHR_FW_REV_UUID16:
-            val = conf_get_value("id/app", NULL, 0);
+            strcpy(conf_name, "id/app");
+            val = conf_get_value(conf_name, NULL, 0);
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_SVC_DIS_CHR_HW_REV_UUID16:
-            val = conf_get_value("id/bsp", NULL, 0);
+            strcpy(conf_name, "id/bsp");
+            val = conf_get_value(conf_name, NULL, 0);
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_SVC_DIS_CHR_SW_REV_UUID16:
-            // val = "stuff"; // works
-
-            // p conf_get_value("id/app", (void *)0, 0) # blesplit
-            // set $foo = conf_get_value("id/app", (void *)0, 0)
-            // p strlen($foo) # 7
-
-            val = conf_get_value("id/app", NULL, 0);
-            // returns empty string....
-
+            strcpy(conf_name, "id/app");
+            val = conf_get_value(conf_name, NULL, 0);
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_SVC_DIS_CHR_MFG_NAME_UUID16:
-            val = conf_get_value("id/mfghash", NULL, 0);
+            strcpy(conf_name, "id/mfghash");
+            val = conf_get_value(conf_name, NULL, 0);
             rc = os_mbuf_append(ctxt->om, val, strlen(val));
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
@@ -154,7 +156,7 @@ gatt_svr_chr_access_dis(uint16_t conn_handle, uint16_t attr_handle,
  * @param eventq
  * @return 0 on success; non-zero on failure
  */
-int
+static int
 dis_gatt_svr_init(void)
 {
     int rc;
@@ -179,7 +181,7 @@ err:
  * @param Maximum input
  */
 void
-dis_init(void)
+ble_svc_dis_init(void)
 {
     int rc;
 

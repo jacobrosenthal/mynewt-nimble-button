@@ -34,10 +34,7 @@ extern "C" {
 #define BLE_SVC_DIS_CHR_MFG_NAME_UUID16                     0x2A29
 
 void
-dis_init(void);
-int
-dis_gatt_svr_init(void);
-
+ble_svc_dis_init(void);
 
 #ifdef __cplusplus
 }
