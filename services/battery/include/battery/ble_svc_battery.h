@@ -27,8 +27,8 @@ extern "C" {
 #define BLE_SVC_BATTERY_UUID16                                  0x180F
 #define BLE_SVC_BATTERY_CHR_LEVEL_UUID16                        0x2A19
 
-int
-ble_svc_battery_init(void *adc);
+void
+ble_svc_battery_init(void);
 
 #ifdef __cplusplus
 }

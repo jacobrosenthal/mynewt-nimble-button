@@ -18,26 +18,11 @@ Add the dependency to your pkg.yml
     - "@mynewt-nimble-services/services/battery"
 ```
 
-In your main.c include the header, init an adc osdriver, probably from a package like adc_nrf51_driver, and init the battery
-```
-#include "battery/ble_svc_battery.h"
+The service inits itself so theres nothing to do in your main.c
 
-
-#include <adc/adc.h>
-#include "adc_nrf51_driver/adc_nrf51_driver.h"
-
-int
-main(void)
-{
-...
-    adc = adc_nrf51_driver_init();
-    rc = ble_svc_battery_init(adc);
-...
-}
-```
-
-You might want to override the time between samples in your target or app syscfg.yml
+You might want to override the time between samples and adc name to use in your target or app syscfg.yml
 ```
 syscfg.vals:
-	BATTERY_SAMPLE_DELAY:1800
+	BATTERY_SAMPLE_DELAY: 1800
+    BATTERY_ADC_NAME: '"adc0"'
 ```

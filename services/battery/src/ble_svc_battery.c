@@ -28,6 +28,7 @@
 #include "host/ble_uuid.h"
 #include "os/os_dev.h"
 #include "battery/ble_svc_battery.h"
+#include <adc/adc.h>
 
 // #define ADC_NAME #MYNEWT_VAL(BATTERY_ADC_NAME)
 
@@ -191,32 +192,34 @@ ble_svc_battery_adc_task_handler(void *unused)
  *
  * @param Maximum input
  */
-int
-ble_svc_battery_init(void *adc)
+void
+ble_svc_battery_init(void)
 {
     int rc;
 
     /* Ensure this function only gets called by sysinit. */
-    // SYSINIT_ASSERT_ACTIVE();
+    SYSINIT_ASSERT_ACTIVE();
 
     /* Automatically register the service. */
     rc = battery_gatt_svr_init();
-    // SYSINIT_PANIC_ASSERT(rc == 0);
-    assert(rc == 0);
+    SYSINIT_PANIC_ASSERT(rc == 0);
 
     /* ADC init */
-    //todo get this from a fnction or mynewt syscfg
-    //todo os_dev_lookup isnt actually exposed atm
-    ble_svc_battery_adc = (struct adc_dev *)adc;
+    ble_svc_battery_adc = (struct adc_dev *)os_dev_lookup(MYNEWT_VAL(BATTERY_ADC_NAME));
+    SYSINIT_PANIC_ASSERT(ble_svc_battery_adc != NULL);
 
     rc = adc_event_handler_set(ble_svc_battery_adc, ble_svc_battery_adc_read_event, (void *) NULL);
-    assert(rc == 0);
-    // SYSINIT_PANIC_ASSERT(rc == 0);
+    SYSINIT_PANIC_ASSERT(rc == 0);
 
-    //get a sample in
-    adc_sample(ble_svc_battery_adc);
+    // Kick off a sample
+    rc = adc_sample(ble_svc_battery_adc);
+    SYSINIT_PANIC_ASSERT(rc == 0);
 
-    return rc = os_task_init(&ble_svc_battery_adc_task, "sensor", ble_svc_battery_adc_task_handler,
-            NULL, MYNEWT_VAL(BATTERY_TASK_PRIO), OS_WAIT_FOREVER,
-            ble_svc_battery_adc_stack, ADC_STACK_SIZE);
+    /* Create the battery_read reader task.
+     * All sensor operations are performed in this task.
+     */
+    rc = os_task_init(&ble_svc_battery_adc_task, "battery", ble_svc_battery_adc_task_handler,
+        NULL, MYNEWT_VAL(BATTERY_TASK_PRIO), OS_WAIT_FOREVER,
+        ble_svc_battery_adc_stack, ADC_STACK_SIZE);
+    SYSINIT_PANIC_ASSERT(rc == 0);
 }

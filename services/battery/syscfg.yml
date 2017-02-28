@@ -29,6 +29,6 @@ syscfg.defs:
     BATTERY_SAMPLE_DELAY:
         description: 'TBD'
         value: 1800
-    # BATTERY_ADC_NAME:
-    #     description: 'TBD'
-    #     value: 'adc0'
+    BATTERY_ADC_NAME:
+        description: 'TBD'
+        value: '"adc0"'
