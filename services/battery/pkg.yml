@@ -30,8 +30,5 @@ pkg.deps:
     - "@apache-mynewt-core/net/nimble/host"
     - "@apache-mynewt-core/hw/drivers/adc"
 
-pkg.apis:
-    - ADC_HW_IMPL
-
 pkg.init:
     ble_svc_battery_init: 501
