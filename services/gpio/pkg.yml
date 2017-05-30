@@ -17,7 +17,7 @@
 #
 
 pkg.name: services/gpio
-pkg.description: Button and LED Service Server.
+pkg.description: GPIO Service Server.
 pkg.author: "Jacob Rosenthal"
 pkg.homepage: 
 pkg.keywords:
@@ -33,4 +33,4 @@ pkg.deps:
     - "@apache-mynewt-core/hw/drivers/adc"
 
 pkg.init:
-    ble_svc_gpio_init: 300
+    ble_svc_gpio_init: 301

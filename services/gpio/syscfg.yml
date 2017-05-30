@@ -20,4 +20,21 @@ syscfg.defs:
     NIMBLE_GPIO_ADC_NAME:
         description: 'TBD'
         value: '"adc0"'
-
+    NIMBLE_GPIO_TASK_PRIO:
+        description: 'TBD'
+        value: 32
+    NIMBLE_GPIO_ADC_0_RESOLUTION:
+        description: 'TBD'
+        value: 'NRF_ADC_CONFIG_RES_10BIT'
+    NIMBLE_GPIO_ADC_0_SCALING:
+        description: 'TBD'
+        value: 'NRF_ADC_CONFIG_SCALING_INPUT_FULL_SCALE'
+    NIMBLE_GPIO_ADC_0_REFERENCE:
+        description: 'TBD'
+        value: 'NRF_ADC_CONFIG_REF_VBG'
+    NIMBLE_GPIO_ADC_0_EXTERNAL_REFERENCE:
+        description: 'TBD'
+        value: 'ADC_CONFIG_EXTREFSEL_None'
+    NIMBLE_GPIO_ADC_0_INTERRUPT_PRIORITY:
+        description: 'TBD'
+        value: 'ADC_CONFIG_IRQ_PRIORITY'

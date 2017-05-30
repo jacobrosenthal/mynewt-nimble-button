@@ -24,13 +24,15 @@
 extern "C" {
 #endif
 
-struct PinState {
+typedef struct {
   uint8_t mode;
   uint16_t value;
   bool reportDigital;
   bool reportAnalog;
   bool pwm;
-};
+} PinState_t;
+
+#define TOTAL_PINS 5
 
 /* 16 Bit Alert Notification Servivce Characteristic UUIDs */
 #define BLE_SVC_GPIO_CHR_UUID16_DIGITAL_STAT                	0x2a56
